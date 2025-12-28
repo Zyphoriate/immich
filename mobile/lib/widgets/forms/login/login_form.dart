@@ -408,8 +408,8 @@ class LoginForm extends HookConsumerWidget {
             onChanged: (value) {
               useDistributionServer.value = value ?? false;
             },
-            title: const Text('Use Distribution Server'),
-            subtitle: const Text('Get server address from a distribution server with caching'),
+            title: const Text('login_form_use_distribution_server').tr(),
+            subtitle: const Text('login_form_use_distribution_server_subtitle').tr(),
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
           ),

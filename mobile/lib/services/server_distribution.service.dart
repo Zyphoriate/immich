@@ -16,6 +16,7 @@ final serverDistributionServiceProvider = Provider(
 class ServerDistributionService {
   final _log = Logger("ServerDistributionService");
   static const int defaultCacheDurationMinutes = 60;
+  static const Duration requestTimeout = Duration(seconds: 10);
 
   /// Fetches the server URL from the distribution server
   /// 
@@ -34,7 +35,7 @@ class ServerDistributionService {
       
       final response = await client
           .get(uri, headers: {"Accept": "application/json"})
-          .timeout(const Duration(seconds: 10));
+          .timeout(requestTimeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -44,7 +45,11 @@ class ServerDistributionService {
           _log.info("Received server URL from distribution: $serverUrl");
           return serverUrl;
         } else {
-          throw Exception('Distribution server response missing "serverUrl" field');
+          final availableFields = data.keys.join(', ');
+          throw Exception(
+            'Distribution server response missing "serverUrl" field. '
+            'Available fields: $availableFields',
+          );
         }
       } else {
         throw HttpException(

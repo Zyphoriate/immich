@@ -35,11 +35,11 @@ class ServerEndpointInput extends StatelessWidget {
         controller: controller,
         decoration: InputDecoration(
           labelText: isDistributionMode
-              ? 'Distribution Server URL'
+              ? 'login_form_distribution_url'.tr()
               : 'login_form_endpoint_url'.tr(),
           border: const OutlineInputBorder(),
           hintText: isDistributionMode
-              ? 'https://distribution.example.com'
+              ? 'login_form_distribution_hint'.tr()
               : 'login_form_endpoint_hint'.tr(),
           errorMaxLines: 4,
         ),
