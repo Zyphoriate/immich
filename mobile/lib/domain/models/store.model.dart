@@ -73,6 +73,11 @@ enum StoreKey<T> {
   autoPlayVideo<bool>._(139),
   albumGridView<bool>._(140),
 
+  // Server distribution settings
+  distributionServerUrl<String>._(141),
+  cachedServerEndpoint<String>._(142),
+  serverCacheDurationMinutes<int>._(143),
+
   // Experimental stuff
   photoManagerCustomFilter<bool>._(1000),
   betaPromptShown<bool>._(1001),

@@ -6,8 +6,15 @@ class ServerEndpointInput extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final Function()? onSubmit;
+  final bool isDistributionMode;
 
-  const ServerEndpointInput({super.key, required this.controller, required this.focusNode, this.onSubmit});
+  const ServerEndpointInput({
+    super.key,
+    required this.controller,
+    required this.focusNode,
+    this.onSubmit,
+    this.isDistributionMode = false,
+  });
 
   String? _validateInput(String? url) {
     if (url == null || url.isEmpty) return null;
@@ -27,9 +34,13 @@ class ServerEndpointInput extends StatelessWidget {
       child: TextFormField(
         controller: controller,
         decoration: InputDecoration(
-          labelText: 'login_form_endpoint_url'.tr(),
+          labelText: isDistributionMode
+              ? 'Distribution Server URL'
+              : 'login_form_endpoint_url'.tr(),
           border: const OutlineInputBorder(),
-          hintText: 'login_form_endpoint_hint'.tr(),
+          hintText: isDistributionMode
+              ? 'https://distribution.example.com'
+              : 'login_form_endpoint_hint'.tr(),
           errorMaxLines: 4,
         ),
         validator: _validateInput,

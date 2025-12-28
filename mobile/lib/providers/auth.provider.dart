@@ -64,6 +64,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     return _authService.validateServerUrl(url);
   }
 
+  Future<String> validateServerUrlWithDistribution(
+    String url, {
+    bool useDistribution = false,
+  }) {
+    return _authService.validateServerUrlWithDistribution(
+      url,
+      useDistribution: useDistribution,
+    );
+  }
+
   /// Validating the url is the alternative connecting server url without
   /// saving the information to the local database
   Future<bool> validateAuxilaryServerUrl(String url) async {

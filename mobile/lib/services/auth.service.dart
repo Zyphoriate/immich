@@ -15,6 +15,7 @@ import 'package:immich_mobile/repositories/auth_api.repository.dart';
 import 'package:immich_mobile/services/api.service.dart';
 import 'package:immich_mobile/services/app_settings.service.dart';
 import 'package:immich_mobile/services/network.service.dart';
+import 'package:immich_mobile/services/server_distribution.service.dart';
 import 'package:logging/logging.dart';
 import 'package:openapi/api.dart';
 
@@ -26,6 +27,7 @@ final authServiceProvider = Provider(
     ref.watch(networkServiceProvider),
     ref.watch(backgroundSyncProvider),
     ref.watch(appSettingsServiceProvider),
+    ref.watch(serverDistributionServiceProvider),
   ),
 );
 
@@ -36,6 +38,7 @@ class AuthService {
   final NetworkService _networkService;
   final BackgroundSyncManager _backgroundSyncManager;
   final AppSettingsService _appSettingsService;
+  final ServerDistributionService _serverDistributionService;
   final _log = Logger("AuthService");
 
   AuthService(
@@ -45,6 +48,7 @@ class AuthService {
     this._networkService,
     this._backgroundSyncManager,
     this._appSettingsService,
+    this._serverDistributionService,
   );
 
   /// Validates the provided server URL by resolving and setting the endpoint.
@@ -57,6 +61,43 @@ class AuthService {
   /// Throws an exception if the URL cannot be resolved or set.
   Future<String> validateServerUrl(String url) async {
     final validUrl = await _apiService.resolveAndSetEndpoint(url);
+    await _apiService.setDeviceInfoHeader();
+    await Store.put(StoreKey.serverUrl, validUrl);
+
+    return validUrl;
+  }
+
+  /// Validates the server URL with distribution server support.
+  /// If distribution server is configured, fetches the actual server URL from it.
+  /// Uses cache if available and valid.
+  ///
+  /// [url] - The distribution server URL or direct server URL
+  /// [useDistribution] - Whether to use distribution server mode
+  ///
+  /// Returns the validated and resolved server URL as a [String].
+  ///
+  /// Throws an exception if the URL cannot be resolved or set.
+  Future<String> validateServerUrlWithDistribution(
+    String url, {
+    bool useDistribution = false,
+  }) async {
+    String actualServerUrl = url;
+
+    if (useDistribution) {
+      // Store the distribution URL
+      await Store.put(StoreKey.distributionServerUrl, url);
+      
+      // Get actual server URL from distribution service (uses cache if valid)
+      actualServerUrl = await _serverDistributionService.getServerUrl(url);
+      _log.info("Got server URL from distribution: $actualServerUrl");
+    } else {
+      // Clear distribution settings when not using distribution mode
+      await Store.delete(StoreKey.distributionServerUrl);
+      await _serverDistributionService.clearCache();
+    }
+
+    // Validate and set the actual server URL
+    final validUrl = await _apiService.resolveAndSetEndpoint(actualServerUrl);
     await _apiService.setDeviceInfoHeader();
     await Store.put(StoreKey.serverUrl, validUrl);
 
@@ -136,6 +177,8 @@ class AuthService {
       Store.delete(StoreKey.preferredWifiName),
       Store.delete(StoreKey.localEndpoint),
       Store.delete(StoreKey.externalEndpointList),
+      Store.delete(StoreKey.distributionServerUrl),
+      Store.delete(StoreKey.cachedServerEndpoint),
     ]);
   }
 

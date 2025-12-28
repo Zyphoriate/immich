@@ -63,6 +63,7 @@ class LoginForm extends HookConsumerWidget {
     final warningMessage = useState<String?>(null);
     final loginFormKey = GlobalKey<FormState>();
     final ValueNotifier<String?> serverEndpoint = useState<String?>(null);
+    final useDistributionServer = useState<bool>(false);
 
     checkVersionMismatch() async {
       try {
@@ -97,7 +98,10 @@ class LoginForm extends HookConsumerWidget {
 
       try {
         isLoadingServer.value = true;
-        final endpoint = await ref.read(authProvider.notifier).validateServerUrl(serverUrl);
+        final endpoint = await ref.read(authProvider.notifier).validateServerUrlWithDistribution(
+          serverUrl,
+          useDistribution: useDistributionServer.value,
+        );
 
         // Fetch and load server config and features
         await ref.read(serverInfoProvider.notifier).getServerInfo();
@@ -151,6 +155,14 @@ class LoginForm extends HookConsumerWidget {
       if (serverUrl != null) {
         serverEndpointController.text = serverUrl;
       }
+      
+      // Load distribution server URL if set
+      final distributionUrl = Store.tryGet(StoreKey.distributionServerUrl);
+      if (distributionUrl != null && distributionUrl.isNotEmpty) {
+        serverEndpointController.text = distributionUrl;
+        useDistributionServer.value = true;
+      }
+      
       return null;
     }, []);
 
@@ -388,8 +400,20 @@ class LoginForm extends HookConsumerWidget {
             controller: serverEndpointController,
             focusNode: serverEndpointFocusNode,
             onSubmit: getServerAuthSettings,
+            isDistributionMode: useDistributionServer.value,
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 8),
+          CheckboxListTile(
+            value: useDistributionServer.value,
+            onChanged: (value) {
+              useDistributionServer.value = value ?? false;
+            },
+            title: const Text('Use Distribution Server'),
+            subtitle: const Text('Get server address from a distribution server with caching'),
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+          ),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
