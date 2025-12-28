@@ -47,8 +47,8 @@ class ServerDistributionService {
         } else {
           final availableFields = data.keys.join(', ');
           throw Exception(
-            'Distribution server response missing "serverUrl" field. '
-            'Available fields: $availableFields',
+            'Invalid distribution server response format. '
+            'Expected "serverUrl" field but got: $availableFields',
           );
         }
       } else {
@@ -64,6 +64,22 @@ class ServerDistributionService {
     }
   }
 
+  /// Helper method to retrieve cached endpoint from store
+  CachedServerEndpoint? _getCachedEndpoint() {
+    final cachedEndpointJson = Store.tryGet(StoreKey.cachedServerEndpoint);
+    
+    if (cachedEndpointJson == null || cachedEndpointJson.isEmpty) {
+      return null;
+    }
+
+    try {
+      return CachedServerEndpoint.fromJson(cachedEndpointJson);
+    } catch (error) {
+      _log.warning("Failed to parse cached endpoint", error);
+      return null;
+    }
+  }
+
   /// Gets the server URL, using cache if valid, otherwise fetches from distribution
   Future<String> getServerUrl(String distributionUrl) async {
     final cacheDuration = Duration(
@@ -74,22 +90,16 @@ class ServerDistributionService {
     );
 
     // Try to get cached endpoint
-    final cachedEndpointJson = Store.tryGet(StoreKey.cachedServerEndpoint);
+    final cachedEndpoint = _getCachedEndpoint();
     
-    if (cachedEndpointJson != null && cachedEndpointJson.isNotEmpty) {
-      try {
-        final cachedEndpoint = CachedServerEndpoint.fromJson(cachedEndpointJson);
-        
-        // Check if cache is still valid and distribution URL matches
-        if (!cachedEndpoint.isExpired(cacheDuration) && 
-            cachedEndpoint.distributionUrl == distributionUrl) {
-          _log.info("Using cached server URL: ${cachedEndpoint.serverUrl}");
-          return cachedEndpoint.serverUrl;
-        } else {
-          _log.info("Cache expired or distribution URL changed, fetching new server URL");
-        }
-      } catch (error) {
-        _log.warning("Failed to parse cached endpoint, will fetch new one", error);
+    if (cachedEndpoint != null) {
+      // Check if cache is still valid and distribution URL matches
+      if (!cachedEndpoint.isExpired(cacheDuration) && 
+          cachedEndpoint.distributionUrl == distributionUrl) {
+        _log.info("Using cached server URL: ${cachedEndpoint.serverUrl}");
+        return cachedEndpoint.serverUrl;
+      } else {
+        _log.info("Cache expired or distribution URL changed, fetching new server URL");
       }
     }
 
@@ -129,19 +139,13 @@ class ServerDistributionService {
       ),
     );
 
-    final cachedEndpointJson = Store.tryGet(StoreKey.cachedServerEndpoint);
+    final cachedEndpoint = _getCachedEndpoint();
     
-    if (cachedEndpointJson == null || cachedEndpointJson.isEmpty) {
+    if (cachedEndpoint == null) {
       return false;
     }
 
-    try {
-      final cachedEndpoint = CachedServerEndpoint.fromJson(cachedEndpointJson);
-      return !cachedEndpoint.isExpired(cacheDuration) && 
-             cachedEndpoint.distributionUrl == distributionUrl;
-    } catch (error) {
-      _log.warning("Failed to check cached endpoint", error);
-      return false;
-    }
+    return !cachedEndpoint.isExpired(cacheDuration) && 
+           cachedEndpoint.distributionUrl == distributionUrl;
   }
 }

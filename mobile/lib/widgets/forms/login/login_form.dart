@@ -151,16 +151,20 @@ class LoginForm extends HookConsumerWidget {
     }
 
     useEffect(() {
+      // Load the last used server URL
       final serverUrl = getServerUrl();
-      if (serverUrl != null) {
-        serverEndpointController.text = serverUrl;
-      }
       
-      // Load distribution server URL if set
+      // Check if distribution server URL is configured (takes precedence)
       final distributionUrl = Store.tryGet(StoreKey.distributionServerUrl);
+      
       if (distributionUrl != null && distributionUrl.isNotEmpty) {
+        // Distribution mode: use distribution URL
         serverEndpointController.text = distributionUrl;
         useDistributionServer.value = true;
+      } else if (serverUrl != null) {
+        // Regular mode: use direct server URL
+        serverEndpointController.text = serverUrl;
+        useDistributionServer.value = false;
       }
       
       return null;
